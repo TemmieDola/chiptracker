@@ -23,6 +23,7 @@ static float vis_pos = 0.0f;
 static int last_order = -1;
 static int last_pattern = -1;
 static unsigned int last_save = 0;
+static unsigned int ctx_gen = 0;
 
 static Uint32 fmt_color(const char *f)
 {
@@ -75,6 +76,7 @@ static void build_context(int idx)
 {
 	int i;
 
+	ctx_gen = lib_generation;
 	player.ctx_count = 0;
 	player.ctx_pos = 0;
 	if (track_count <= 0)
@@ -90,8 +92,26 @@ static void build_context(int idx)
 	}
 }
 
-/* ------------------------------------------------ shuffle history --- */
+static void ctx_check(void)
+{
+	if (ctx_gen == lib_generation)
+		return;
+	ctx_gen = lib_generation;
+	if (!player.loaded || track_count <= 0) {
+		player.ctx_count = 0;
+		return;
+	}
+	{
+		int idx = library_index_of(player.track.path);
 
+		if (idx >= 0)
+			build_context(idx);
+		else
+			player.ctx_count = 0;
+	}
+}
+
+/* ------------------------------------------------ shuffle history --- */
 #define SHUF_HIST 256
 
 static int shuf_hist[SHUF_HIST];
@@ -351,6 +371,7 @@ void player_next(int dir)
 			player_start_index(idx, 0);
 		return;
 	}
+	ctx_check();
 	if (player.ctx_count <= 0)
 		return;
 	p = player.ctx_pos + dir;
@@ -419,6 +440,7 @@ void player_on_end(void)
 		player_start_index(idx, 0);
 		return;
 	}
+	ctx_check();
 	if (player.ctx_count > 0 && player.ctx_pos + 1 < player.ctx_count) {
 		player.ctx_pos++;
 		player_start_index(player.ctx[player.ctx_pos], 0);
@@ -798,15 +820,31 @@ static void mf_row(unsigned char *row)
 	}
 }
 
+#define BOT_BARS 30
+
 static void vis_cell(int i, int *x, int *w)
 {
-	int x0 = i * SW / SPECTRUM_BARS;
-	int x1 = (i + 1) * SW / SPECTRUM_BARS;
+	*x = i * SW / BOT_BARS;
+	*w = SW / BOT_BARS - 1;
+}
 
-	*x = x0;
-	*w = x1 - x0 - 1;
-	if (*w < 1)
-		*w = 1;
+/* Resample the 32 FFT bands into the 30 columns of the bottom strip. */
+static float bar_value(int i, int peak)
+{
+	float pos = (float)i * (float)(SPECTRUM_BARS - 1) /
+		    (float)(BOT_BARS - 1);
+	int b0 = (int)pos;
+	int b1 = b0 + 1;
+	float fr = pos - (float)b0;
+
+	if (b1 >= SPECTRUM_BARS) {
+		b1 = b0;
+		fr = 0.0f;
+	}
+	if (peak)
+		return spectrum_peak(b0) * (1.0f - fr) +
+		       spectrum_peak(b1) * fr;
+	return spectrum_bar(b0) * (1.0f - fr) + spectrum_bar(b1) * fr;
 }
 
 static void draw_visualizer(AudioSnap *s)
@@ -821,10 +859,10 @@ static void draw_visualizer(AudioSnap *s)
 
 	if (cfg.vis == VIS_SPECTRUM) {
 		gfx_hline(0, center, SW, pal.line2);
-		for (i = 0; i < SPECTRUM_BARS; i++) {
+		for (i = 0; i < BOT_BARS; i++) {
 			int x, w;
-			float v = spectrum_bar(i);
-			float p = spectrum_peak(i);
+			float v = bar_value(i, 0);
+			float p = bar_value(i, 1);
 			int h = (int)(v * 12.0f);
 
 			vis_cell(i, &x, &w);
@@ -873,10 +911,10 @@ static void draw_visualizer(AudioSnap *s)
 				gfx_px(x, VIS_TOP + 1 + y,
 				       mf_pal[mf_buf[y][x]]);
 	} else if (cfg.vis == VIS_PEAKS) {
-		for (i = 0; i < SPECTRUM_BARS; i++) {
+		for (i = 0; i < BOT_BARS; i++) {
 			int x, w;
-			float v = spectrum_bar(i);
-			float p = spectrum_peak(i);
+			float v = bar_value(i, 0);
+			float p = bar_value(i, 1);
 			int h = (int)(v * 21.0f);
 
 			vis_cell(i, &x, &w);
@@ -893,26 +931,24 @@ static void draw_visualizer(AudioSnap *s)
 			}
 		}
 	} else if (cfg.vis == VIS_DOTS) {
-		for (i = 0; i < SPECTRUM_BARS; i++) {
-			int x, w, dw;
-			int lv = (int)(spectrum_bar(i) * 5.99f);
+		for (i = 0; i < BOT_BARS; i++) {
+			int x, w;
+			int lv = (int)(bar_value(i, 0) * 5.99f);
 			int k;
 
 			vis_cell(i, &x, &w);
-			dw = w - 2;
-			if (dw < 3)
-				dw = 3;
-			x += (w - dw) / 2;
+			x += 1;
+			w = 6;
 			if (lv > 5)
 				lv = 5;
 			for (k = 0; k < 6; k++) {
 				int y = base - k * 4;
 
 				if (k <= lv)
-					gfx_fill(x, y - 1, dw, 2,
+					gfx_fill(x, y - 1, w, 2,
 						 k > 3 ? pal.fx : pal.accent);
 				else
-					gfx_fill(x, y - 1, dw, 1, pal.line2);
+					gfx_fill(x, y - 1, w, 1, pal.line2);
 			}
 		}
 	} else {

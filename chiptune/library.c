@@ -179,10 +179,17 @@ void library_draw(void)
 	if (scan_state) {
 		snprintf(tmp, sizeof(tmp), "SCAN %d", scan.files);
 		gfx_text_right(234, 8, tmp, pal.accent);
-	} else if (player.loaded && player.ctx_count > 0) {
-		snprintf(tmp, sizeof(tmp), "%d/%d", player.ctx_pos + 1,
-			 player.ctx_count);
-		gfx_text_right(234, 8, tmp, pal.accent);
+	} else if (player.loaded) {
+		int pidx = library_index_of(player.track.path);
+
+		if (pidx >= 0) {
+			snprintf(tmp, sizeof(tmp), "%d/%d", pidx + 1,
+				 track_count);
+			gfx_text_right(234, 8, tmp, pal.accent);
+		} else {
+			snprintf(tmp, sizeof(tmp), "%d TRACKS", track_count);
+			gfx_text_right(234, 8, tmp, pal.dim);
+		}
 	} else {
 		snprintf(tmp, sizeof(tmp), "%d TRACKS", track_count);
 		gfx_text_right(234, 8, tmp, pal.dim);
