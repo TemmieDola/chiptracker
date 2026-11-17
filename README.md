@@ -87,6 +87,13 @@ MO3 files with MP3-compressed samples work too (libmpg123 is bundled in the OPK)
 Console sound formats such as NSF/SPC/GBS/VGM/SID are not supported — those are
 chip emulators, not tracker modules.
 
+## Where to find music
+
+Chiptracker does not include any music. A great place to start is
+**[keygenmusic.tk](https://keygenmusic.tk/)** — a large archive of keygen and
+demoscene tracker modules (XM, IT, MOD, S3M, MO3 and more). You can also browse
+[The Mod Archive](https://modarchive.org/).
+
 ## Controls
 
 ### Player
