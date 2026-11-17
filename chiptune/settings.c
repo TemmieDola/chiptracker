@@ -93,7 +93,7 @@ static const char *row_desc(int id)
 	case S_QUALITY: return "AUDIO INTERPOLATION, APPLIED LIVE";
 	case S_RATE: return "SAMPLE RATE, NEEDS A RESTART";
 	case S_THEME: return "COLOUR PALETTE OF THE UI";
-	case S_VIS: return "BOTTOM SPECTRUM / VU / OFF";
+	case S_VIS: return "SPECTRUM/SCOPE/WATERFALL/PEAKS/DOTS";
 	case S_FPS: return "FRAME RATE, 15 SAVES BATTERY";
 	case S_SPLASH: return "3 SECOND SPLASH ON STARTUP";
 	case S_HINTS: return "AUTO HIDE / ALWAYS / OFF";
