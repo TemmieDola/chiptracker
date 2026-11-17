@@ -1,0 +1,36 @@
+# Cross-compilation for FunKey OS (RG Nano / FunKey S)
+#
+# Normally you do not call this file directly: ../scripts/build.sh sources the
+# FunKey SDK environment and runs
+#   make -f Makefile.funkey
+#
+# libopenmpt is built once by scripts/build-libopenmpt.sh into ../vendor/.
+
+PRGNAME = chiptune
+
+SRC = main.c gfx.c util.c config.c scan.c audio.c spectrum.c \
+      player.c library.c browser.c settings.c info.c splash.c theme.c \
+      vis.c help.c lock.c
+
+CC      ?= arm-funkey-linux-musleabihf-gcc
+CFLAGS  ?=
+CFLAGS  += -Wall -Wextra -std=gnu99 -I../vendor/include
+CFLAGS  += -D_GNU_SOURCE
+
+ifeq ($(findstring -O,$(CFLAGS)),)
+CFLAGS  += -O2
+endif
+
+LDFLAGS ?=
+LDFLAGS += -Wl,-rpath,'$$ORIGIN' -Wl,--disable-new-dtags
+LDLIBS   = ../vendor/lib/libopenmpt.a -lstdc++ -lmpg123 -lz -lSDL -lm -lpthread
+
+all: $(PRGNAME)
+
+$(PRGNAME): $(SRC) app.h gfx.h font5x7.h Makefile.funkey
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(SRC) $(LDLIBS)
+
+clean:
+	rm -f $(PRGNAME) *.o
+
+.PHONY: all clean

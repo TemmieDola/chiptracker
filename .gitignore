@@ -1,0 +1,28 @@
+# Build output
+build/
+dist/
+chiptune/chiptune
+*.o
+*.opk
+
+# Vendored libopenmpt: built locally by scripts/build-libopenmpt.sh
+vendor/lib/
+vendor/include/
+vendor/*.tar.gz
+
+# Local preview / test artefacts
+preview.png
+preview-big.png
+icon-preview.png
+*.ppm
+*.log
+squashfs-root/
+
+# Local music library (not part of the project)
+KEYGENMUSiC/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
