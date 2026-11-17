@@ -280,6 +280,20 @@ void library_draw(void)
 	(void)scan_state;
 }
 
+static void library_step(int dir)
+{
+	int idx;
+
+	if (!player.loaded)
+		return;
+	player_next(dir);
+	idx = library_index_of(player.track.path);
+	if (idx >= 0) {
+		lib.sel = idx;
+		ensure_visible();
+	}
+}
+
 void library_key(SDLKey k)
 {
 	switch (k) {
@@ -296,7 +310,6 @@ void library_key(SDLKey k)
 		}
 		break;
 	case SDLK_l:
-	case SDLK_m:
 		if (track_count > 0) {
 			lib.sel -= 10;
 			if (lib.sel < 0)
@@ -305,13 +318,18 @@ void library_key(SDLKey k)
 		}
 		break;
 	case SDLK_r:
-	case SDLK_n:
 		if (track_count > 0) {
 			lib.sel += 10;
 			if (lib.sel >= track_count)
 				lib.sel = track_count - 1;
 			ensure_visible();
 		}
+		break;
+	case SDLK_m:
+		library_step(-1);
+		break;
+	case SDLK_n:
+		library_step(1);
 		break;
 	case SDLK_a:
 		if (track_count == 0)

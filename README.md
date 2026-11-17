@@ -123,8 +123,9 @@ demoscene tracker modules (XM, IT, MOD, S3M, MO3 and more). You can also browse
 | X | sort: name → format → size |
 | Y | random track |
 | Start | rescan the music folder |
-| L / R | page up / down |
-| D-pad | select |
+| D-pad ↑ / ↓ | select |
+| D-pad ← / → | page up / down |
+| L / R (shoulders) | previous / next track (stays in the list) |
 
 ### Track info
 
