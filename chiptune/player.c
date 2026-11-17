@@ -81,14 +81,6 @@ static void build_context(int idx)
 		return;
 	for (i = 0; i < track_count; i++)
 		player.ctx[i] = i;
-	if (cfg.shuffle) {
-		for (i = track_count - 1; i > 0; i--) {
-			int j = rand() % (i + 1);
-			int t = player.ctx[i];
-			player.ctx[i] = player.ctx[j];
-			player.ctx[j] = t;
-		}
-	}
 	player.ctx_count = track_count;
 	for (i = 0; i < track_count; i++) {
 		if (player.ctx[i] == idx) {
@@ -96,6 +88,127 @@ static void build_context(int idx)
 			break;
 		}
 	}
+}
+
+/* ------------------------------------------------ shuffle history --- */
+
+#define SHUF_HIST 256
+
+static int shuf_hist[SHUF_HIST];
+static int shuf_len = 0;
+static int shuf_pos = -1;
+static int shuf_blast = -1;
+static int shuf_bag[MAX_TRACKS];
+static int shuf_bag_len = 0;
+static int shuf_bag_pos = 0;
+static int shuf_cycle_done = 0;
+static unsigned int shuf_gen = 0;
+static int shuf_on = 0;
+
+static int current_library_index(void)
+{
+	return player.loaded ? library_index_of(player.track.path) : -1;
+}
+
+static void shuffle_reset(int idx)
+{
+	shuf_gen = lib_generation;
+	shuf_bag_len = 0;
+	shuf_bag_pos = 0;
+	shuf_cycle_done = 0;
+	shuf_len = 0;
+	shuf_pos = -1;
+	shuf_blast = idx;
+	if (idx >= 0) {
+		shuf_hist[0] = idx;
+		shuf_len = 1;
+		shuf_pos = 0;
+	}
+}
+
+static void shuffle_check(void)
+{
+	if (cfg.shuffle != shuf_on) {
+		shuf_on = cfg.shuffle;
+		shuffle_reset(cfg.shuffle ? current_library_index() : -1);
+		return;
+	}
+	if (shuf_gen != lib_generation)
+		shuffle_reset(cfg.shuffle ? current_library_index() : -1);
+}
+
+/* Random next with a no-repeat bag; going forward after "previous" replays
+ * the actual next track from the history. */
+static int shuffle_next(int auto_end)
+{
+	int i, n;
+
+	shuffle_check();
+	if (shuf_pos + 1 < shuf_len) {
+		shuf_pos++;
+		shuf_blast = shuf_hist[shuf_pos];
+		return shuf_hist[shuf_pos];
+	}
+	if (track_count <= 0)
+		return -1;
+	if (shuf_bag_pos >= shuf_bag_len) {
+		if (auto_end && cfg.repeat == REPEAT_OFF && shuf_cycle_done)
+			return -1;
+		n = 0;
+		for (i = 0; i < track_count; i++)
+			if (i != shuf_blast)
+				shuf_bag[n++] = i;
+		if (n == 0) {
+			shuf_bag[0] = 0;
+			n = 1;
+		}
+		for (i = n - 1; i > 0; i--) {
+			int j = rand() % (i + 1);
+			int t = shuf_bag[i];
+
+			shuf_bag[i] = shuf_bag[j];
+			shuf_bag[j] = t;
+		}
+		shuf_bag_len = n;
+		shuf_bag_pos = 0;
+		shuf_cycle_done = 0;
+	}
+	i = shuf_bag[shuf_bag_pos++];
+	if (shuf_bag_pos >= shuf_bag_len)
+		shuf_cycle_done = 1;
+	if (shuf_len >= SHUF_HIST) {
+		memmove(shuf_hist, shuf_hist + 1,
+			(size_t)(SHUF_HIST - 1) * sizeof(int));
+		shuf_len = SHUF_HIST - 1;
+	}
+	shuf_hist[shuf_len++] = i;
+	shuf_pos = shuf_len - 1;
+	shuf_blast = i;
+	return i;
+}
+
+static int shuffle_prev(void)
+{
+	shuffle_check();
+	if (shuf_pos > 0) {
+		shuf_pos--;
+		shuf_blast = shuf_hist[shuf_pos];
+		return shuf_hist[shuf_pos];
+	}
+	return -1;
+}
+
+static void shuffle_note_start(int idx)
+{
+	if (!cfg.shuffle) {
+		shuf_on = 0;
+		return;
+	}
+	shuffle_check();
+	if (shuf_pos >= 0 && shuf_pos < shuf_len &&
+	    shuf_hist[shuf_pos] == idx)
+		return;
+	shuffle_reset(idx);
 }
 
 void player_start_index(int idx, int paused)
@@ -150,6 +263,7 @@ void player_start_index(int idx, int paused)
 
 	set_titles();
 	build_context(idx);
+	shuffle_note_start(idx);
 
 	util_copy(cfg.last_path, sizeof(cfg.last_path), player.track.path);
 	cfg.last_pos = seek;
@@ -206,6 +320,7 @@ void player_start_path(const char *path, int paused)
 	spectrum_reset();
 	ui_hints_show();
 	set_titles();
+	shuffle_note_start(-1);
 	util_copy(cfg.last_path, sizeof(cfg.last_path), path);
 	cfg.last_pos = seek;
 	cfg.last_valid = 1;
@@ -227,7 +342,16 @@ void player_next(int dir)
 {
 	int p;
 
-	if (!player.loaded || player.ctx_count <= 0)
+	if (!player.loaded)
+		return;
+	if (cfg.shuffle) {
+		int idx = dir > 0 ? shuffle_next(0) : shuffle_prev();
+
+		if (idx >= 0)
+			player_start_index(idx, 0);
+		return;
+	}
+	if (player.ctx_count <= 0)
 		return;
 	p = player.ctx_pos + dir;
 	if (p < 0) {
@@ -282,6 +406,17 @@ void player_on_end(void)
 		audio_seek_seconds(0.0);
 		audio_set_paused(0);
 		player.paused = 0;
+		return;
+	}
+	if (cfg.shuffle) {
+		int idx = shuffle_next(1);
+
+		if (idx < 0) {
+			player.paused = 1;
+			cfg.last_pos = 0.0;
+			return;
+		}
+		player_start_index(idx, 0);
 		return;
 	}
 	if (player.ctx_count > 0 && player.ctx_pos + 1 < player.ctx_count) {
@@ -584,7 +719,7 @@ static void draw_progress(AudioSnap *s)
 
 /* ------------------------------------------- bottom mini waterfall --- */
 
-#define MF_W 232
+#define MF_W SW
 #define MF_H (VIS_H - 2)
 
 static unsigned char mf_buf[MF_H][MF_W];
@@ -663,6 +798,17 @@ static void mf_row(unsigned char *row)
 	}
 }
 
+static void vis_cell(int i, int *x, int *w)
+{
+	int x0 = i * SW / SPECTRUM_BARS;
+	int x1 = (i + 1) * SW / SPECTRUM_BARS;
+
+	*x = x0;
+	*w = x1 - x0 - 1;
+	if (*w < 1)
+		*w = 1;
+}
+
 static void draw_visualizer(AudioSnap *s)
 {
 	int i;
@@ -674,33 +820,35 @@ static void draw_visualizer(AudioSnap *s)
 	gfx_hline(0, VIS_TOP + VIS_H - 1, SW, pal.line);
 
 	if (cfg.vis == VIS_SPECTRUM) {
-		gfx_hline(8, center, 224, pal.line2);
+		gfx_hline(0, center, SW, pal.line2);
 		for (i = 0; i < SPECTRUM_BARS; i++) {
-			int x = 8 + i * 7;
+			int x, w;
 			float v = spectrum_bar(i);
 			float p = spectrum_peak(i);
 			int h = (int)(v * 12.0f);
 
+			vis_cell(i, &x, &w);
 			if (h > 0) {
-				gfx_fill(x, center - h, 6, h, pal.accent);
-				gfx_hline(x, center - h, 6, pal.text);
+				gfx_fill(x, center - h, w, h, pal.accent);
+				gfx_hline(x, center - h, w, pal.text);
 			}
 			if (p > 0.03f) {
 				int ph = (int)(p * 12.0f);
-				gfx_hline(x, center - ph - 1, 6, pal.instr);
-				gfx_hline(x, center + ph + 1, 6, pal.instr);
+
+				gfx_hline(x, center - ph - 1, w, pal.instr);
+				gfx_hline(x, center + ph + 1, w, pal.instr);
 			}
 		}
 	} else if (cfg.vis == VIS_SCOPE) {
 		int py = center;
 
-		gfx_hline(4, center, 232, pal.line2);
-		for (i = 0; i < 232; i++) {
-			int idx = (i * 512 / 232) & 511;
+		gfx_hline(0, center, SW, pal.line2);
+		for (i = 0; i < SW; i++) {
+			int idx = (i * 512 / SW) & 511;
 			int y = center - (s->scope[idx] * 11) / 32768;
 
 			if (i)
-				gfx_line(4 + i - 1, py, 4 + i, y, pal.accent);
+				gfx_line(i - 1, py, i, y, pal.accent);
 			py = y;
 		}
 	} else if (cfg.vis == VIS_WATERFALL) {
@@ -722,43 +870,49 @@ static void draw_visualizer(AudioSnap *s)
 		}
 		for (y = 0; y < MF_H; y++)
 			for (x = 0; x < MF_W; x++)
-				gfx_px(4 + x, VIS_TOP + 1 + y,
+				gfx_px(x, VIS_TOP + 1 + y,
 				       mf_pal[mf_buf[y][x]]);
 	} else if (cfg.vis == VIS_PEAKS) {
 		for (i = 0; i < SPECTRUM_BARS; i++) {
-			int x = 4 + i * 7;
+			int x, w;
 			float v = spectrum_bar(i);
 			float p = spectrum_peak(i);
 			int h = (int)(v * 21.0f);
 
+			vis_cell(i, &x, &w);
 			if (h > 21)
 				h = 21;
 			if (h > 0)
-				gfx_fill(x, base - h, 5, h, pal.accent);
+				gfx_fill(x, base - h, w, h, pal.accent);
 			if (p > 0.03f) {
 				int ph = (int)(p * 21.0f);
 
 				if (ph > 21)
 					ph = 21;
-				gfx_hline(x, base - ph - 1, 5, pal.instr);
+				gfx_hline(x, base - ph - 1, w, pal.instr);
 			}
 		}
 	} else if (cfg.vis == VIS_DOTS) {
 		for (i = 0; i < SPECTRUM_BARS; i++) {
-			int x = 4 + i * 7;
+			int x, w, dw;
 			int lv = (int)(spectrum_bar(i) * 5.99f);
 			int k;
 
+			vis_cell(i, &x, &w);
+			dw = w - 2;
+			if (dw < 3)
+				dw = 3;
+			x += (w - dw) / 2;
 			if (lv > 5)
 				lv = 5;
 			for (k = 0; k < 6; k++) {
 				int y = base - k * 4;
 
 				if (k <= lv)
-					gfx_fill(x, y - 1, 4, 2,
+					gfx_fill(x, y - 1, dw, 2,
 						 k > 3 ? pal.fx : pal.accent);
 				else
-					gfx_fill(x, y - 1, 4, 1, pal.line2);
+					gfx_fill(x, y - 1, dw, 1, pal.line2);
 			}
 		}
 	} else {

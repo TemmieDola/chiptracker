@@ -175,6 +175,7 @@ typedef struct {
 extern Config cfg;
 extern Track tracks[MAX_TRACKS];
 extern int track_count;
+extern unsigned int lib_generation;
 extern ScanState scan;
 extern PlayerState player;
 extern LibState lib;

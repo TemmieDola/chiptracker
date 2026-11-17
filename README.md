@@ -37,7 +37,9 @@ tracker-style UI, built for a 240 × 240 screen and a D-pad.
   short explanation for every row (hold **L/R**), saved automatically.
 - **Library that stays put** — pick a track and keep browsing; B returns to the
   player.
-- **Resume, repeat, shuffle, quality, sample rate, FPS 15/30/45/60, CRT scanlines.**
+- **Resume, repeat, shuffle with play history, quality, sample rate, FPS 15/30/45/60, CRT scanlines.**
+  Shuffle plays a random next track and keeps the real history, so **Previous**
+  returns to the track that actually played before it.
 
 ## Screenshots
 

@@ -26,3 +26,5 @@ KEYGENMUSiC/
 .idea/
 .DS_Store
 Thumbs.db
+
+tmp-*.png

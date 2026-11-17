@@ -13,6 +13,7 @@
 #include "app.h"
 
 ScanState scan;
+unsigned int lib_generation = 1;
 
 static char **stack = NULL;
 static int stack_len = 0;
@@ -99,6 +100,7 @@ static int add_root_if_file(const char *root)
 void scan_begin(const char *root, int recursive)
 {
 	scan_abort();
+	lib_generation++;
 	track_count = 0;
 	memset(&scan, 0, sizeof(scan));
 	util_copy(scan.root, sizeof(scan.root), root ? root : "");
@@ -228,6 +230,7 @@ void tracks_sort(int mode)
 		mode = 0;
 	cfg.sort = mode;
 	qsort(tracks, (size_t)track_count, sizeof(Track), cmp_tracks);
+	lib_generation++;
 }
 
 static void no_log(const char *message, void *user)
