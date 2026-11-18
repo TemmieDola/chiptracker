@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stability pass: swap 5 tracks, then a 60 fps live run, then a lock cycle.
+# Stability pass: swap 5 tracks, then a live run at 60 FPS, then a lock cycle.
 set -uo pipefail
 ROOT=/mnt/w/ai/agent/anbernic-rg-nano/chiptune-player
 SYS=/opt/FunKey-sdk-2.3.0/arm-funkey-linux-musleabihf/sysroot
@@ -26,7 +26,7 @@ CHIP_CONFIG_DIR=/tmp/chip-lock-cfg CHIP_LOCK_TEST=1 \
 echo "lock exit $?"
 cat /tmp/chip-lock-cfg/lock.log 2>/dev/null
 
-echo "== 60 fps live run, 6 s"
+echo "== live run, 6 s"
 rm -rf /tmp/chip-live-cfg; mkdir -p /tmp/chip-live-cfg
 cat > /tmp/chip-live-cfg/config.ini <<EOF
 music_dir=$ROOT/KEYGENMUSiC
@@ -44,7 +44,6 @@ quality=1
 samplerate=44100
 show_splash=0
 hints=0
-fps=60
 page_slide=1
 lock_key=0
 vis_style=7

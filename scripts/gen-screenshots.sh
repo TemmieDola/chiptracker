@@ -16,7 +16,7 @@ CHIP_ORDER=2 CHIP_POS=12 CHIP_HINTS=2 OUT=docs/screenshot-player.png \
 	bash scripts/preview.sh player "$TRACK"
 OUT=docs/screenshot-library.png bash scripts/preview.sh library "$TRACK"
 CHIP_SET_SEL=0 OUT=docs/screenshot-settings.png bash scripts/preview.sh settings
-CHIP_SET_SEL=17 CHIP_SET_DESC=1 \
+CHIP_SET_SEL=16 CHIP_SET_DESC=1 \
 	OUT=docs/screenshot-settings-system.png bash scripts/preview.sh settings
 CHIP_BATTERY=87 CHIP_STATS=1 OUT=docs/screenshot-stats.png \
 	bash scripts/preview.sh player "$TRACK"

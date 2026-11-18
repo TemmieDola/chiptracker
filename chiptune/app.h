@@ -13,6 +13,10 @@
 
 #define VIS_STYLE_COUNT 8
 
+/* The UI always runs at 60 FPS; the frame loop is cheap enough that the
+ * difference in battery life versus 15/30 FPS was not measurable. */
+#define APP_FPS 60
+
 #define MAX_PATH 512
 #define MAX_TRACKS 4096
 #define MAX_BROWSER 300
@@ -101,7 +105,6 @@ typedef struct {
 	int sort;		/* 0 name, 1 format, 2 size */
 	int show_splash;
 	int hints;		/* 0 auto, 1 on, 2 off */
-	int fps;		/* 15, 30, 45, 60 */
 	int page_slide;		/* horizontal channel page slide */
 	int lock_key;		/* 0 start, 1 select, 2 both */
 	int vis_style;		/* fullscreen visualizer */

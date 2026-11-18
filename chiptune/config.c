@@ -66,7 +66,6 @@ void config_defaults(void)
 	cfg.last_valid = 0;
 	cfg.show_splash = 1;
 	cfg.hints = 0;
-	cfg.fps = 30;
 	cfg.page_slide = 1;
 	cfg.lock_key = 0;
 	cfg.vis_style = 0;
@@ -142,8 +141,6 @@ int config_load(void)
 			cfg.show_splash = geti(val);
 		else if (!strcmp(key, "hints"))
 			cfg.hints = geti(val);
-		else if (!strcmp(key, "fps"))
-			cfg.fps = geti(val);
 		else if (!strcmp(key, "page_slide"))
 			cfg.page_slide = geti(val);
 		else if (!strcmp(key, "lock_key"))
@@ -180,8 +177,6 @@ int config_load(void)
 		cfg.sort = 0;
 	if (cfg.hints < 0 || cfg.hints > 2)
 		cfg.hints = 0;
-	if (cfg.fps != 15 && cfg.fps != 30 && cfg.fps != 45 && cfg.fps != 60)
-		cfg.fps = 30;
 	if (cfg.page_slide < 0 || cfg.page_slide > 1)
 		cfg.page_slide = 1;
 	if (cfg.lock_key < 0 || cfg.lock_key > 2)
@@ -233,7 +228,6 @@ int config_save(void)
 	fprintf(f, "sort=%d\n", cfg.sort);
 	fprintf(f, "show_splash=%d\n", cfg.show_splash);
 	fprintf(f, "hints=%d\n", cfg.hints);
-	fprintf(f, "fps=%d\n", cfg.fps);
 	fprintf(f, "page_slide=%d\n", cfg.page_slide);
 	fprintf(f, "lock_key=%d\n", cfg.lock_key);
 	fprintf(f, "vis_style=%d\n", cfg.vis_style);

@@ -20,7 +20,6 @@ enum {
 	S_RATE,
 	S_THEME,
 	S_VIS,
-	S_FPS,
 	S_SPLASH,
 	S_HINTS,
 	S_SCANLINES,
@@ -56,7 +55,6 @@ static const SetItem items[S_COUNT] = {
 	{ G_PLAYBACK, S_RATE },
 	{ G_DISPLAY, S_THEME },
 	{ G_DISPLAY, S_VIS },
-	{ G_DISPLAY, S_FPS },
 	{ G_DISPLAY, S_SPLASH },
 	{ G_DISPLAY, S_HINTS },
 	{ G_DISPLAY, S_SCANLINES },
@@ -94,7 +92,6 @@ static const char *row_desc(int id)
 	case S_RATE: return "SAMPLE RATE, NEEDS A RESTART";
 	case S_THEME: return "COLOUR PALETTE OF THE UI";
 	case S_VIS: return "SPECTRUM/SCOPE/WATERFALL/PEAKS/DOTS";
-	case S_FPS: return "FRAME RATE, 15 SAVES BATTERY";
 	case S_SPLASH: return "3 SECOND SPLASH ON STARTUP";
 	case S_HINTS: return "AUTO HIDE / ALWAYS / OFF";
 	case S_SCANLINES: return "CRT STYLE DARK LINES";
@@ -163,7 +160,6 @@ static const char *row_label(int id)
 	case S_RATE: return "SAMPLE RATE";
 	case S_THEME: return "COLOUR THEME";
 	case S_VIS: return "BOTTOM VISUALIZER";
-	case S_FPS: return "FRAME RATE";
 	case S_SPLASH: return "SHOW SPLASH";
 	case S_HINTS: return "BUTTON HINTS";
 	case S_SCANLINES: return "CRT SCANLINES";
@@ -214,9 +210,6 @@ static void row_value(int id, char *out, size_t n)
 		break;
 	case S_VIS:
 		util_copy(out, n, vis_name(cfg.vis));
-		break;
-	case S_FPS:
-		snprintf(out, n, "%d", cfg.fps);
 		break;
 	case S_SPLASH:
 		util_copy(out, n, cfg.show_splash ? "ON" : "OFF");
@@ -278,16 +271,6 @@ static void cycle(int dir)
 	case S_VIS:
 		cfg.vis = (cfg.vis + (dir > 0 ? 1 : VIS_MODE_COUNT - 1)) %
 			  VIS_MODE_COUNT;
-		break;
-	case S_FPS:
-		if (cfg.fps == 15)
-			cfg.fps = dir > 0 ? 30 : 60;
-		else if (cfg.fps == 30)
-			cfg.fps = dir > 0 ? 45 : 15;
-		else if (cfg.fps == 45)
-			cfg.fps = dir > 0 ? 60 : 30;
-		else
-			cfg.fps = dir > 0 ? 15 : 45;
 		break;
 	case S_SPLASH:
 		cfg.show_splash = !cfg.show_splash;

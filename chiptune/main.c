@@ -891,9 +891,9 @@ int main(int argc, char **argv)
 		}
 
 		{
-			unsigned int frame_ms = 1000u / (unsigned int)
-				(cfg.fps > 0 ? cfg.fps : 30);
+			unsigned int frame_ms = 1000u / APP_FPS;
 			unsigned int elapsed = SDL_GetTicks() - now;
+
 			if (elapsed < frame_ms)
 				SDL_Delay(frame_ms - elapsed);
 		}

@@ -13,7 +13,7 @@ A                play / pause
 B                library (stays in the list after picking a track)
 X                track info (metadata, message, samples)
 Y                fullscreen visualizer (Y there = next style)
-Start            settings (music folder, theme, FPS, lock)
+Start            settings (music folder, theme, lock)
 Hold Start 0.7s  lock the screen (Select too, see LOCK BUTTON)
 Select (Fn)      stats window: FPS, position, library, battery
 Menu             exit
